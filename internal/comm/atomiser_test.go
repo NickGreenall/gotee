@@ -87,9 +87,12 @@ func TestAtomiserNoMatch(t *testing.T) {
 	if err == nil {
 		t.Error(`Expected an error, received nil`)
 	}
-	_, ok := err.(*AtomiserError)
+	e, ok := err.(*AtomiserError)
 	if !ok {
 		t.Error(`Expected an atomiser error\n`)
+	}
+	if e.Error() != "Not a match" {
+		t.Errorf(`Unexpected error message, received: %v`, e.Error())
 	}
 }
 

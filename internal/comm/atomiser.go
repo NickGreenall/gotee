@@ -8,7 +8,7 @@ type AtomData map[string][]byte
 
 type Atomiser struct {
 	Parser *regexp.Regexp
-	enc    Encoder
+	Enc    Encoder
 }
 
 type AtomiserError struct {
@@ -40,7 +40,7 @@ func (a *Atomiser) Write(b []byte) (int, error) {
 				data[grpNames[i]] = grp
 			}
 		}
-		err := a.enc.Encode(data)
+		err := a.Enc.Encode(data)
 		if err != nil {
 			return 0, err
 		}
