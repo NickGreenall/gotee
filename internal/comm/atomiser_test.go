@@ -36,10 +36,7 @@ func TestAtomiserMatchWrite(t *testing.T) {
 	}
 	for i, input := range mockInputs {
 		t.Logf(`input %d: %v, pat: "%v"`, i, input, mockPats[i])
-		mockEnc := &MockEncoder{
-			nil,
-			nil,
-		}
+		mockEnc := NewMockEncoder(nil)
 		atmsr, err := NewAtomiser(
 			mockPats[i],
 			mockEnc,
@@ -58,7 +55,7 @@ func TestAtomiserMatchWrite(t *testing.T) {
 				len(input),
 			)
 		}
-		actual, ok := mockEnc.val.(AtomData)
+		actual, ok := mockEnc.calls[0].(AtomData)
 		if !ok {
 			t.Error(`Value written isn't correct data type`)
 		}
@@ -99,10 +96,7 @@ func TestAtomiserNoMatch(t *testing.T) {
 func TestAtomiserEncError(t *testing.T) {
 	mockInput := []byte(`match`)
 	mockPat := `match`
-	mockEnc := &MockEncoder{
-		nil,
-		&MockEncodeError{},
-	}
+	mockEnc := NewMockEncoder(&MockEncodeError{})
 	atmsr, err := NewAtomiser(
 		mockPat,
 		mockEnc,

@@ -1,17 +1,24 @@
 package comm
 
 type MockEncoder struct {
-	val interface{}
-	err error
+	index int
+	calls []interface{}
+}
+
+func NewMockEncoder(calls ...interface{}) *MockEncoder {
+	return &MockEncoder{
+		0,
+		calls,
+	}
 }
 
 func (e *MockEncoder) Encode(v interface{}) error {
-	if e.err != nil {
-		return e.err
-	} else {
-		e.val = v
-		return nil
+	call, _ := e.calls[e.index].(error)
+	if call == nil {
+		e.calls[e.index] = v
 	}
+	e.index++
+	return call
 }
 
 type MockEncodeError struct {
