@@ -1,6 +1,7 @@
-package comm
+package multiEnc
 
 import (
+	"github.com/NickGreenall/gotee/internal/common"
 	"sync"
 )
 
@@ -62,7 +63,7 @@ func (e *MultiEncoder) Encode(data interface{}) error {
 	}
 }
 
-func Join(enc Encoder, done chan struct{}, encoders ...*MultiEncoder) {
+func Join(enc common.Encoder, done chan struct{}, encoders ...*MultiEncoder) {
 	var wg sync.WaitGroup
 
 	outEnc := make(chan interface{})

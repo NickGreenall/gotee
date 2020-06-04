@@ -1,8 +1,8 @@
-package comm
+package mock
 
 type MockEncoder struct {
 	index int
-	calls []interface{}
+	Calls []interface{}
 }
 
 func NewMockEncoder(calls ...interface{}) *MockEncoder {
@@ -13,9 +13,9 @@ func NewMockEncoder(calls ...interface{}) *MockEncoder {
 }
 
 func (e *MockEncoder) Encode(v interface{}) error {
-	call, _ := e.calls[e.index].(error)
+	call, _ := e.Calls[e.index].(error)
 	if call == nil {
-		e.calls[e.index] = v
+		e.Calls[e.index] = v
 	}
 	e.index++
 	return call

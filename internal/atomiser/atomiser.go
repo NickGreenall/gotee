@@ -1,6 +1,7 @@
-package comm
+package atomiser
 
 import (
+	"github.com/NickGreenall/gotee/internal/common"
 	"regexp"
 )
 
@@ -8,7 +9,7 @@ type AtomData map[string][]byte
 
 type Atomiser struct {
 	Parser *regexp.Regexp
-	Enc    Encoder
+	Enc    common.Encoder
 }
 
 type AtomiserError struct {
@@ -19,7 +20,7 @@ func (a *AtomiserError) Error() string {
 	return a.msg
 }
 
-func NewAtomiser(pattern string, enc Encoder) (*Atomiser, error) {
+func NewAtomiser(pattern string, enc common.Encoder) (*Atomiser, error) {
 	parser, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, err

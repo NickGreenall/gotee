@@ -1,6 +1,7 @@
-package comm
+package atomiser
 
 import (
+	"github.com/NickGreenall/gotee/internal/mock"
 	"reflect"
 	"testing"
 )
@@ -36,7 +37,7 @@ func TestAtomiserMatchWrite(t *testing.T) {
 	}
 	for i, input := range mockInputs {
 		t.Logf(`input %d: %v, pat: "%v"`, i, input, mockPats[i])
-		mockEnc := NewMockEncoder(nil)
+		mockEnc := mock.NewMockEncoder(nil)
 		atmsr, err := NewAtomiser(
 			mockPats[i],
 			mockEnc,
@@ -55,7 +56,7 @@ func TestAtomiserMatchWrite(t *testing.T) {
 				len(input),
 			)
 		}
-		actual, ok := mockEnc.calls[0].(AtomData)
+		actual, ok := mockEnc.Calls[0].(AtomData)
 		if !ok {
 			t.Error(`Value written isn't correct data type`)
 		}
@@ -96,7 +97,7 @@ func TestAtomiserNoMatch(t *testing.T) {
 func TestAtomiserEncError(t *testing.T) {
 	mockInput := []byte(`match`)
 	mockPat := `match`
-	mockEnc := NewMockEncoder(&MockEncodeError{})
+	mockEnc := mock.NewMockEncoder(&mock.MockEncodeError{})
 	atmsr, err := NewAtomiser(
 		mockPat,
 		mockEnc,
@@ -112,7 +113,7 @@ func TestAtomiserEncError(t *testing.T) {
 	if ok {
 		t.Error(`Unexpected an atomiser error\n`)
 	}
-	_, ok = err.(*MockEncodeError)
+	_, ok = err.(*mock.MockEncodeError)
 	if !ok {
 		t.Error(`Expected an encoder error\n`)
 	}
