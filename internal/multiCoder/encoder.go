@@ -1,4 +1,4 @@
-package multiEnc
+package multiCoder
 
 import (
 	"github.com/NickGreenall/gotee/internal/common"
@@ -10,19 +10,6 @@ type MultiEncoder struct {
 	enc  chan MultiAtom
 	err  chan error
 	done chan struct{}
-}
-
-type MultiAtom struct {
-	Key  string
-	Data interface{}
-}
-
-type MultiEncodeErr struct {
-	msg string
-}
-
-func (e *MultiEncodeErr) Error() string {
-	return e.msg
 }
 
 func NewMultiEncoder(key string, done chan struct{}) *MultiEncoder {

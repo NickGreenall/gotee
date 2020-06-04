@@ -1,4 +1,4 @@
-package multiEnc
+package multiCoder
 
 import (
 	"github.com/NickGreenall/gotee/internal/mock"
