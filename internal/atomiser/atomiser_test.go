@@ -37,7 +37,7 @@ func TestAtomiserMatchWrite(t *testing.T) {
 	}
 	for i, input := range mockInputs {
 		t.Logf(`input %d: %v, pat: "%v"`, i, input, mockPats[i])
-		mockEnc := mock.NewMockEncoder(nil)
+		mockEnc := mock.NewMockCoder(nil)
 		atmsr, err := NewAtomiser(
 			mockPats[i],
 			mockEnc,
@@ -97,7 +97,7 @@ func TestAtomiserNoMatch(t *testing.T) {
 func TestAtomiserEncError(t *testing.T) {
 	mockInput := []byte(`match`)
 	mockPat := `match`
-	mockEnc := mock.NewMockEncoder(&mock.MockEncodeError{})
+	mockEnc := mock.NewMockCoder(&mock.MockCoderError{})
 	atmsr, err := NewAtomiser(
 		mockPat,
 		mockEnc,
@@ -113,7 +113,7 @@ func TestAtomiserEncError(t *testing.T) {
 	if ok {
 		t.Error(`Unexpected an atomiser error\n`)
 	}
-	_, ok = err.(*mock.MockEncodeError)
+	_, ok = err.(*mock.MockCoderError)
 	if !ok {
 		t.Error(`Expected an encoder error\n`)
 	}

@@ -38,7 +38,7 @@ func JoinDecoders(
 			}
 		}()
 		atom := &MultiAtom{}
-		for true {
+		for {
 			select {
 			case <-done:
 				break

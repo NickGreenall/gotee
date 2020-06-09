@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func checkEncVals(t *testing.T, enc *mock.MockEncoder, atoms ...MultiAtom) {
+func checkEncVals(t *testing.T, enc *mock.MockCoder, atoms ...MultiAtom) {
 	for i, atom := range atoms {
 		a, ok := enc.Calls[i].(MultiAtom)
 		if !ok {
@@ -26,7 +26,7 @@ func checkEncVals(t *testing.T, enc *mock.MockEncoder, atoms ...MultiAtom) {
 	}
 }
 
-func checkEncValsUnordered(t *testing.T, enc *mock.MockEncoder, atoms ...MultiAtom) {
+func checkEncValsUnordered(t *testing.T, enc *mock.MockCoder, atoms ...MultiAtom) {
 	callMap := make(map[MultiAtom]bool)
 	for _, call := range enc.Calls {
 		callMap[call.(MultiAtom)] = true
@@ -43,7 +43,7 @@ func TestSingleEncode(t *testing.T) {
 	done := make(chan struct{})
 	defer close(done)
 	mltEnc := NewMultiEncoder("test", done)
-	mockEnc := mock.NewMockEncoder(nil)
+	mockEnc := mock.NewMockCoder(nil)
 	Join(mockEnc, done, mltEnc)
 	err := mltEnc.Encode("Test Write")
 	if err != nil {
@@ -57,7 +57,7 @@ func TestSeqMultiEncode(t *testing.T) {
 	defer close(done)
 	mltEncA := NewMultiEncoder("A", done)
 	mltEncB := NewMultiEncoder("B", done)
-	mockEnc := mock.NewMockEncoder(nil, nil)
+	mockEnc := mock.NewMockCoder(nil, nil)
 	Join(mockEnc, done, mltEncA, mltEncB)
 	err := mltEncA.Encode("A")
 	if err != nil {
@@ -75,7 +75,7 @@ func TestConMultiEncode(t *testing.T) {
 	defer close(done)
 	mltEncA := NewMultiEncoder("A", done)
 	mltEncB := NewMultiEncoder("B", done)
-	mockEnc := mock.NewMockEncoder(nil, nil)
+	mockEnc := mock.NewMockCoder(nil, nil)
 	Join(mockEnc, done, mltEncA, mltEncB)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
@@ -102,7 +102,7 @@ func TestConMultiEncodeErr(t *testing.T) {
 	defer close(done)
 	mltEncA := NewMultiEncoder("A", done)
 	mltEncB := NewMultiEncoder("B", done)
-	mockEnc := mock.NewMockEncoder(&MultiEncodeErr{}, &MultiEncodeErr{})
+	mockEnc := mock.NewMockCoder(&MultiEncodeErr{}, &MultiEncodeErr{})
 	Join(mockEnc, done, mltEncA, mltEncB)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
@@ -127,7 +127,7 @@ func TestSingleEncodeClosed(t *testing.T) {
 	done := make(chan struct{})
 	defer close(done)
 	mltEnc := NewMultiEncoder("test", done)
-	mockEnc := mock.NewMockEncoder(nil)
+	mockEnc := mock.NewMockCoder(nil)
 	Join(mockEnc, done, mltEnc)
 	err := mltEnc.Close()
 	if err != nil {
@@ -144,7 +144,7 @@ func TestSingleEncodeClosed(t *testing.T) {
 func TestSingleEncodeDone(t *testing.T) {
 	done := make(chan struct{})
 	mltEnc := NewMultiEncoder("test", done)
-	mockEnc := mock.NewMockEncoder(nil)
+	mockEnc := mock.NewMockCoder(nil)
 	Join(mockEnc, done, mltEnc)
 	close(done)
 	err := mltEnc.Encode("Fail encoding")
