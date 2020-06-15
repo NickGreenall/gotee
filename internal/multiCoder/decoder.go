@@ -10,12 +10,20 @@ type MultiDecoder struct {
 	done chan struct{}
 }
 
-func (d *MultiDecoder) Decode(data *interface{}) {
+func NewMultiDecoder(key string) *MultiDecoder {
+	return &MultiDecoder{
+		key,
+		nil,
+		nil,
+	}
+}
+
+func (d *MultiDecoder) Decode() interface{} {
 	select {
 	case <-d.done:
-		*data = nil
+		return nil
 	default:
-		*data = <-d.dec
+		return <-d.dec
 	}
 }
 

@@ -18,8 +18,8 @@ func (m *MockVal) Unmarshal(v interface{}) error {
 	return nil
 }
 
-type MockUnmarsheler interface {
-	Unmarshal(v interface{}) error
+type MockUnmarshaler interface {
+	MockUnmarshal(v interface{}) error
 }
 
 func NewMockCoder(calls ...interface{}) *MockCoder {
@@ -41,14 +41,22 @@ func (e *MockCoder) Encode(v interface{}) error {
 func (e *MockCoder) Decode(v interface{}) error {
 	err, _ := e.Calls[e.index].(error)
 	if err == nil {
-		u, ok := v.(MockUnmarsheler)
+		u, ok := e.Calls[e.index].(MockUnmarshaler)
 		if !ok {
-			return &MockCoderError{}
+			return &MockDecodeError{"Not valid unmarshaler"}
 		}
-		return u.Unmarshal(e.Calls[e.index])
+		err = u.MockUnmarshal(v)
 	}
 	e.index++
 	return err
+}
+
+type MockDecodeError struct {
+	msg string
+}
+
+func (e *MockDecodeError) Error() string {
+	return e.msg
 }
 
 type MockCoderError struct {
