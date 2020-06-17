@@ -7,7 +7,13 @@ import (
 type MultiDecoder struct {
 	Key  string
 	dec  chan interface{}
+	err  chan error
 	done chan struct{}
+}
+
+type Unmarshaler interface {
+	UnmarshalMulti(v interface{}) error
+	GetKey() string
 }
 
 func NewMultiDecoder(key string) *MultiDecoder {
@@ -15,55 +21,61 @@ func NewMultiDecoder(key string) *MultiDecoder {
 		key,
 		nil,
 		nil,
+		nil,
 	}
 }
 
-func (d *MultiDecoder) Decode() interface{} {
+func (d *MultiDecoder) Decode(v interface{}) error {
 	select {
 	case <-d.done:
-		return nil
-	default:
-		return <-d.dec
+		return &MultiDecodeErr{"Decoding cancelled"}
+	case d.dec <- v:
+		return <-d.err
 	}
 }
 
 func JoinDecoders(
-	dec common.Decoder, done chan struct{}, decoders ...*MultiDecoder,
+	dec common.Decoder,
+	unmarshaler Unmarshaler,
+	done chan struct{},
+	decoders ...*MultiDecoder,
 ) chan error {
 	outErr := make(chan error)
-	outMap := make(map[string]chan interface{})
+	decMap := make(map[string]*MultiDecoder)
 
 	for _, decoder := range decoders {
 		decoder.dec = make(chan interface{})
-		outMap[decoder.Key] = decoder.dec
+		decoder.err = make(chan error)
+		decoder.done = done
+		decMap[decoder.Key] = decoder
 	}
 
 	go func() {
 		defer func() {
 			close(outErr)
-			for _, dec := range decoders {
-				close(dec.dec)
-			}
 		}()
-		atom := &MultiAtom{}
+		var decoder *MultiDecoder
+		var ok bool
 		for {
-			select {
-			case <-done:
-				break
-			default:
-				atom.Key = ""
-				err := dec.Decode(atom)
-				if err != nil {
-					outErr <- err
-				} else {
-					outChan, ok := outMap[atom.Key]
-					if ok {
-						outChan <- atom.Data
-					} else {
-						outErr <- &MultiDecodeErr{
-							"Atom for key which doesn't exist",
-						}
+			err := dec.Decode(unmarshaler)
+			if err == nil {
+				key := unmarshaler.GetKey()
+				decoder, ok = decMap[key]
+				if !ok {
+					err = &MultiDecodeErr{
+						"Recieved key which isn't connected",
 					}
+				}
+			}
+			if err != nil {
+				outErr <- err
+			} else {
+				select {
+				case v := <-decoder.dec:
+					err = unmarshaler.UnmarshalMulti(v)
+					decoder.err <- err
+				case <-done:
+					return
 				}
 			}
 		}

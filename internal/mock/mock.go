@@ -1,5 +1,9 @@
 package mock
 
+import (
+	"io"
+)
+
 type MockCoder struct {
 	index int
 	Calls []interface{}
@@ -9,19 +13,18 @@ type MockVal struct {
 	Val string
 }
 
-func (m *MockVal) Unmarshal(v interface{}) error {
-	mV, ok := v.(MockVal)
-	if !ok {
-		return &MockCoderError{}
-	}
-	*m = mV
-	return nil
-}
-
 type MockUnmarshaler interface {
 	MockUnmarshal(v interface{}) error
 }
 
+func (m *MockVal) Unmarshal(v interface{}) error {
+	mV, ok := v.(MockVal)
+	if !ok {
+		return &MockCoderError{"Mock unmarshal error"}
+	}
+	*m = mV
+	return nil
+}
 func NewMockCoder(calls ...interface{}) *MockCoder {
 	return &MockCoder{
 		0,
@@ -39,8 +42,11 @@ func (e *MockCoder) Encode(v interface{}) error {
 }
 
 func (e *MockCoder) Decode(v interface{}) error {
-	err, _ := e.Calls[e.index].(error)
-	if err == nil {
+	if e.index >= len(e.Calls) {
+		return io.EOF
+	}
+	err, ok := e.Calls[e.index].(error)
+	if !ok {
 		u, ok := e.Calls[e.index].(MockUnmarshaler)
 		if !ok {
 			return &MockDecodeError{"Not valid unmarshaler"}
@@ -60,8 +66,9 @@ func (e *MockDecodeError) Error() string {
 }
 
 type MockCoderError struct {
+	msg string
 }
 
 func (e *MockCoderError) Error() string {
-	return "Error"
+	return e.msg
 }
