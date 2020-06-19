@@ -5,11 +5,3 @@ type KeyPacket interface {
 	GetKey() string
 	KeyUnmarshal(v interface{}) error
 }
-
-type Encoder interface {
-	Encode(v interface{}) error
-}
-
-type Decoder interface {
-	Decode(v interface{}) error
-}

@@ -1,7 +1,11 @@
 package keyEncoding
 
+import (
+	"github.com/NickGreenall/gotee/internal/common"
+)
+
 type KeyDecoder struct {
-	Child  Decoder
+	Child  common.Decoder
 	Packet KeyPacket
 }
 

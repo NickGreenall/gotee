@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+func (a AtomData) MockMarshal() (interface{}, error) {
+	return a, nil
+}
+
 func TestAtomiserNewError(t *testing.T) {
 	a, err := NewAtomiser(`(?PBAD)`, nil)
 	if a != nil {
@@ -97,7 +101,7 @@ func TestAtomiserNoMatch(t *testing.T) {
 func TestAtomiserEncError(t *testing.T) {
 	mockInput := []byte(`match`)
 	mockPat := `match`
-	mockEnc := mock.NewMockCoder(&mock.MockCoderError{})
+	mockEnc := mock.NewMockCoder(&mock.MockEncoderError{})
 	atmsr, err := NewAtomiser(
 		mockPat,
 		mockEnc,
@@ -113,7 +117,7 @@ func TestAtomiserEncError(t *testing.T) {
 	if ok {
 		t.Error(`Unexpected an atomiser error\n`)
 	}
-	_, ok = err.(*mock.MockCoderError)
+	_, ok = err.(*mock.MockEncoderError)
 	if !ok {
 		t.Error(`Expected an encoder error\n`)
 	}

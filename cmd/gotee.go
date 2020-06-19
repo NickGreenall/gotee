@@ -9,13 +9,15 @@ import "os"
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	encoder := json.NewEncoder(os.Stdout)
-	a, err := atomiser.NewAtomiser(".*", encoder)
+	a, err := atomiser.NewAtomiser(`(?P<dig>\d+)`, encoder)
 	if err != nil {
 		fmt.Printf("Unexpected error: %v", err)
 		return
 	}
 	for scanner.Scan() {
-		_, err := a.Write(scanner.Bytes())
+		b := scanner.Bytes()
+		fmt.Printf("Bytes: %s\n", b)
+		_, err := a.Write(b)
 		if err != nil {
 			fmt.Printf("Unexpected error: %v", err)
 			return

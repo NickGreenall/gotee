@@ -9,7 +9,7 @@ func (e *MockCoder) Encode(v interface{}) error {
 			e.Calls[e.index], err = u.MockMarshal()
 		} else {
 			err = &MockEncoderError{
-				"Could not unmarshal",
+				"Could not marshal",
 			}
 		}
 	}
