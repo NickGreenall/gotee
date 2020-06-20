@@ -11,6 +11,41 @@ func (e *ExpectedError) Error() string {
 	return "Expected error"
 }
 
+func TestChildEncoder(t *testing.T) {
+	inputVals := []int{1, 2, 3}
+	enc := mock.NewMockCoder(nil, nil, nil)
+	kEnc := &KeyEncoder{enc, new(mock.MockPacket)}
+	cEnc := kEnc.NewEncoderForKey("A")
+	for _, val := range inputVals {
+		err := cEnc.Encode(val)
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+	}
+	for i, call := range enc.Calls {
+		pack, ok := call.(mock.MockPacket)
+		if !ok {
+			t.Errorf("Not a valid packet for call index: %v", i)
+		}
+		if pack.Key != "A" {
+			t.Errorf(
+				"Expected key: A, Actual key: %v",
+				pack.Key,
+			)
+		}
+		if pack.Data != inputVals[i] {
+			t.Errorf(
+				"Expected value: %v, Actual value: %v",
+				inputVals[i],
+				pack.Data,
+			)
+		}
+		if pack.Data == inputVals[i] && pack.Key == "A" {
+			t.Logf("Received input %v, %v", pack.Key, pack.Data)
+		}
+	}
+}
+
 func TestGoodEncode(t *testing.T) {
 	inputKeys := []string{
 		"A",

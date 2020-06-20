@@ -5,8 +5,6 @@ import (
 	"regexp"
 )
 
-type AtomData map[string][]byte
-
 type Atomiser struct {
 	Parser *regexp.Regexp
 	Enc    common.Encoder
