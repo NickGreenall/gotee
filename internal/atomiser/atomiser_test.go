@@ -27,12 +27,12 @@ func TestAtomiserMatchWrite(t *testing.T) {
 	}
 	expectedData := []*AtomData{
 		{
-			"match": []byte("match"),
+			"match": "match",
 		},
 		{
-			"match": []byte("123 abc"),
-			"a":     []byte("123"),
-			"b":     []byte("abc"),
+			"match": "123 abc",
+			"a":     "123",
+			"b":     "abc",
 		},
 	}
 	for i, input := range mockInputs {

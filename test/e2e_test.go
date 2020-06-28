@@ -74,16 +74,16 @@ func TestAtomiseDecode(t *testing.T) {
 	}
 	outVals := []atomiser.AtomData{
 		atomiser.AtomData{
-			"match": []byte("num: 123, word: foo"),
-			"num":   []byte("123"), "word": []byte("foo"),
+			"match": "num: 123, word: foo",
+			"num":   "123", "word": "foo",
 		},
 		atomiser.AtomData{
-			"match": []byte("num: 673, word: bar"),
-			"num":   []byte("673"), "word": []byte("bar"),
+			"match": "num: 673, word: bar",
+			"num":   "673", "word": "bar",
 		},
 		atomiser.AtomData{
-			"match": []byte("num: 2, word: dog12"),
-			"num":   []byte("2"), "word": []byte("dog12"),
+			"match": "num: 2, word: dog12",
+			"num":   "2", "word": "dog12",
 		},
 	}
 

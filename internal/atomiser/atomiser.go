@@ -48,9 +48,9 @@ func (a *Atomiser) Write(b []byte) (int, error) {
 		grps := a.Parser.FindSubmatch(b)
 		for i, grp := range grps {
 			if i == 0 {
-				data["match"] = grp
+				data["match"] = string(grp)
 			} else {
-				data[grpNames[i]] = grp
+				data[grpNames[i]] = string(grp)
 			}
 		}
 		err := a.Enc.Encode(data)

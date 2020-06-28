@@ -63,7 +63,7 @@ func TestInitTemplate(t *testing.T) {
 
 func TestAtomReceive(t *testing.T) {
 	inputData := make(atomiser.AtomData)
-	inputData["match"] = []byte("foo bar")
+	inputData["match"] = "foo bar"
 	inputVals := []interface{}{
 		mock.MockPacket{"atom", inputData},
 	}
