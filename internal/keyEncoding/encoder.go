@@ -18,7 +18,7 @@ func (enc *Encoder) Encode(v interface{}) error {
 	return enc.Parent.Encode(enc.key, v)
 }
 
-func (enc *KeyEncoder) NewEncoderForKey(key string) *Encoder {
+func (enc *KeyEncoder) NewEncoderForKey(key string) common.Encoder {
 	return &Encoder{enc, key}
 }
 

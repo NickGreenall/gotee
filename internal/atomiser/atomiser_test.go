@@ -6,10 +6,6 @@ import (
 	"testing"
 )
 
-func (a AtomData) MockMarshal() (interface{}, error) {
-	return a, nil
-}
-
 func TestAtomiserNewError(t *testing.T) {
 	a, err := NewAtomiser(`(?PBAD)`, nil)
 	if a != nil {
