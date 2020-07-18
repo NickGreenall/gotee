@@ -1,59 +1,54 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
-	"fmt"
 	"github.com/NickGreenall/gotee/internal/atomiser"
-	"github.com/NickGreenall/gotee/internal/keyEncoding"
-	"github.com/NickGreenall/gotee/internal/producer"
 	"io"
+	"log"
 	"net"
 	"os"
-	"time"
+	"sync"
 )
 
 func main() {
 	var inStrm io.Reader
+
 	if AmForeground() {
-		err := SpawnSniffer("unix", "./test.sock")
+		ln, err := net.Listen("unix", "./test.sock")
 		if err != nil {
-			fmt.Printf("Unexpected error: %v", err)
-			return
+			log.Fatalln(err)
 		}
-		fmt.Println("Foreground")
+
+		defer ln.Close()
+		wg := new(sync.WaitGroup)
+		defer wg.Wait()
+
+		go Sniff(ln, wg, os.Stdout)
+
 		inStrm = os.Stdin
 	} else {
 		inStrm = io.TeeReader(os.Stdin, os.Stdout)
 	}
-	for !SockOpen("./test.sock") {
-		time.Sleep(1)
-	}
-	conn, err := net.DialTimeout("unix", "./test.sock", 60*time.Second)
-	if err != nil {
-		fmt.Printf("Unexpected error: %v", err)
-		return
-	}
 
-	scanner := bufio.NewScanner(inStrm)
-	enc := json.NewEncoder(conn)
-	keyEnc := keyEncoding.NewJsonKeyEncoder(enc)
-	prod := producer.NewProducer(keyEnc)
-	a, err := atomiser.NewAtomiser(`(?P<dig>\d+)`, prod.AtomEnc)
+	conn, err := InitConn("./test.sock")
 	if err != nil {
-		fmt.Printf("Unexpected error: %v", err)
-		return
+		log.Fatalln(err)
 	}
+	defer conn.Close()
 
+	prod := InitProducer(conn)
 	prod.SetJson()
 	//prod.SetTemplate("\033[32mdig: {{.dig}}\033[0m\n")
-	for scanner.Scan() {
-		b := scanner.Bytes()
-		//fmt.Printf("Bytes: %s\n", b)
-		_, err := a.Write(b)
-		if err != nil {
-			fmt.Printf("Unexpected error: %v", err)
-			return
-		}
+
+	atmsr, err := atomiser.NewAtomiser(`(?P<dig>\d+)`, prod.AtomEnc)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	srcRdr := IntReader(inStrm, os.Interrupt)
+	defer srcRdr.Close()
+
+	Source(srcRdr, atmsr)
+	if err != nil {
+		log.Fatalln(err)
 	}
 }

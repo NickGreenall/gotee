@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"sync"
 )
 
 func AmForeground() bool {
@@ -24,34 +25,25 @@ func SockOpen(addr string) bool {
 	return true
 }
 
-func Sink(conn net.Conn) {
-	defer conn.Close()
+func Sink(conn io.Reader, wg *sync.WaitGroup, out io.Writer) {
 	dec := json.NewDecoder(conn)
 	cons := new(consumer.Consumer)
 	cons.Dec = keyEncoding.NewJsonKeyDecoder(dec)
-	cons.Out = os.Stdout
+	cons.Out = out
 	err := cons.Consume()
 	if err != io.EOF {
 		log.Printf("Unexpected error: %v", err)
 	}
+	wg.Done()
 }
 
-func SpawnSniffer(network, addr string) error {
-	ln, err := net.Listen(network, addr)
-	if err != nil {
-		return err
-	}
-	go Sniff(ln)
-	return nil
-}
-
-func Sniff(ln net.Listener) {
-	defer ln.Close()
+func Sniff(ln net.Listener, wg *sync.WaitGroup, out io.Writer) {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			log.Fatalln(err)
 		}
-		go Sink(conn)
+		wg.Add(1)
+		go Sink(conn, wg, out)
 	}
 }

@@ -66,7 +66,12 @@ func TestEncodeDecode(t *testing.T) {
 	wg.Wait()
 }
 
+func TestProducerConsumer(t *testing.T) {
+	// TODO
+}
+
 func TestAtomiseDecode(t *testing.T) {
+	// TODO build on producer/consumer
 	inText := []string{
 		"num: 123, word: foo",
 		"num: 673, word: bar",
@@ -119,5 +124,16 @@ func TestAtomiseDecode(t *testing.T) {
 		}
 	}
 	wg.Wait()
+}
 
+func TestIntSource(t *testing.T) {
+	// TODO
+}
+
+func TestClientServer(t *testing.T) {
+	// TODO
+}
+
+func TestAtomiserClientServer(t *testing.T) {
+	// TODO
 }
