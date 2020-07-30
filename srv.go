@@ -17,14 +17,6 @@ func AmForeground() bool {
 	return terminal.IsTerminal(int(fd))
 }
 
-func SockOpen(addr string) bool {
-	_, err := os.Stat(addr)
-	if err != nil {
-		return os.IsExist(err)
-	}
-	return true
-}
-
 func Sink(conn io.Reader, wg *sync.WaitGroup, out io.Writer) {
 	dec := json.NewDecoder(conn)
 	cons := new(consumer.Consumer)
@@ -41,6 +33,13 @@ func Sniff(ln net.Listener, wg *sync.WaitGroup, out io.Writer) {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
+			opErr, ok := err.(*net.OpError)
+			if ok {
+				s := opErr.Unwrap().Error()
+				if s == "use of closed network connection" {
+					return
+				}
+			}
 			log.Fatalln(err)
 		}
 		wg.Add(1)

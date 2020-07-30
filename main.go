@@ -44,7 +44,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	srcRdr := IntReader(inStrm, os.Interrupt)
+	srcRdr := InitReader(inStrm, os.Interrupt)
 	defer srcRdr.Close()
 
 	Source(srcRdr, atmsr)

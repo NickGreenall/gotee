@@ -3,9 +3,7 @@ package main
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net"
-	"os"
 	"sync"
 	"testing"
 )
@@ -17,30 +15,6 @@ func TestBackground(t *testing.T) {
 	if AmForeground() {
 		t.Fatal("I expected to be in the background")
 	}
-}
-
-func TestSockNotOpen(t *testing.T) {
-	if SockOpen("does_not.exist") {
-		t.Fatal("Non existent socket exists...")
-	}
-}
-
-func TestSockOpen(t *testing.T) {
-	tmpFile, err := ioutil.TempFile("", "temp")
-	if err != nil {
-		t.Fatalf("Unexpected Error: %v", err)
-	}
-
-	if !SockOpen(tmpFile.Name()) {
-		t.Error("Expected file to exist")
-	}
-
-	err = tmpFile.Close()
-	if err != nil {
-		t.Errorf("Unexpected Error: %v", err)
-	}
-
-	os.Remove(tmpFile.Name())
 }
 
 func MockConn() io.Reader {

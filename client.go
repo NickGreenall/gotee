@@ -6,11 +6,20 @@ import (
 	"github.com/NickGreenall/gotee/internal/keyEncoding"
 	"github.com/NickGreenall/gotee/internal/producer"
 	"io"
+	"log"
 	"net"
 	"os"
 	"os/signal"
 	"time"
 )
+
+func SockOpen(addr string) bool {
+	_, err := os.Stat(addr)
+	if err != nil {
+		return os.IsExist(err)
+	}
+	return true
+}
 
 func InitConn(addr string) (net.Conn, error) {
 
@@ -34,7 +43,7 @@ func InitProducer(out io.Writer) *producer.Producer {
 	return prod
 }
 
-func Source(in io.ReadCloser, out io.Writer) error {
+func Source(in io.Reader, out io.Writer) error {
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {
 		b := scanner.Bytes()
@@ -46,7 +55,7 @@ func Source(in io.ReadCloser, out io.Writer) error {
 	return scanner.Err()
 }
 
-func IntReader(in io.Reader, sig ...os.Signal) io.ReadCloser {
+func InitReader(in io.Reader, sig ...os.Signal) io.ReadCloser {
 	rdr, wtr := io.Pipe()
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, sig...)
@@ -54,10 +63,14 @@ func IntReader(in io.Reader, sig ...os.Signal) io.ReadCloser {
 	return rdr
 }
 
-func SpawnCopy(wtr io.WriteCloser, in io.Reader, c chan os.Signal) {
+func SpawnCopy(wtr *io.PipeWriter, in io.Reader, c chan os.Signal) {
 	go func() {
 		defer close(c)
-		io.Copy(wtr, in)
+		_, err := io.Copy(wtr, in)
+		if err != io.ErrClosedPipe && err != nil {
+			// TODO better solution
+			log.Print(err)
+		}
 	}()
 
 	go func() {
