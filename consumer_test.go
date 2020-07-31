@@ -1,4 +1,4 @@
-package consumer
+package main
 
 import (
 	"encoding/json"
@@ -6,7 +6,6 @@ import (
 	"github.com/NickGreenall/gotee/internal/keyEncoding"
 	"github.com/NickGreenall/gotee/internal/mock"
 	"github.com/NickGreenall/gotee/internal/templateEncoder"
-	"io"
 	"reflect"
 	"testing"
 )
@@ -26,7 +25,7 @@ func TestInitJson(t *testing.T) {
 	}
 
 	err := consumer.Consume()
-	if err != io.EOF {
+	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
@@ -51,7 +50,7 @@ func TestInitTemplate(t *testing.T) {
 	}
 
 	err := consumer.Consume()
-	if err != io.EOF {
+	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
@@ -77,7 +76,7 @@ func TestAtomReceive(t *testing.T) {
 		enc,
 	}
 	err := consumer.Consume()
-	if err != io.EOF {
+	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 	if !reflect.DeepEqual(inputData, enc.Calls[0]) {

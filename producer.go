@@ -1,4 +1,4 @@
-package producer
+package main
 
 import (
 	"github.com/NickGreenall/gotee/internal/common"

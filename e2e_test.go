@@ -1,7 +1,9 @@
 package main_test
 
 import (
+	"bytes"
 	"encoding/json"
+	"github.com/NickGreenall/gotee"
 	"github.com/NickGreenall/gotee/internal/atomiser"
 	"github.com/NickGreenall/gotee/internal/keyEncoding"
 	"io"
@@ -57,7 +59,11 @@ func TestEncodeDecode(t *testing.T) {
 		err = dec.Decode(outPtr.Interface())
 		HandleErr(t, err)
 		if outValue.Interface() != inData[i] {
-			t.Errorf("Expected data: %v, received data: %v", inData[i], outValue.Interface())
+			t.Errorf(
+				"Expected data: %v, received data: %v",
+				inData[i],
+				outValue.Interface(),
+			)
 		} else {
 			t.Logf("Received value: %v", inData[i])
 		}
@@ -66,74 +72,54 @@ func TestEncodeDecode(t *testing.T) {
 	wg.Wait()
 }
 
-func TestProducerConsumer(t *testing.T) {
-	// TODO
-}
+func TestNoServer(t *testing.T) {
+	inText := "num: 123, word: foo\n" +
+		"num: 673, word: bar\n" +
+		"num: 2, word: dog12\n"
 
-func TestAtomiseDecode(t *testing.T) {
-	// TODO build on producer/consumer
-	inText := []string{
-		"num: 123, word: foo",
-		"num: 673, word: bar",
-		"num: 2, word: dog12",
-	}
-	outVals := []atomiser.AtomData{
-		atomiser.AtomData{
-			"match": "num: 123, word: foo",
-			"num":   "123", "word": "foo",
-		},
-		atomiser.AtomData{
-			"match": "num: 673, word: bar",
-			"num":   "673", "word": "bar",
-		},
-		atomiser.AtomData{
-			"match": "num: 2, word: dog12",
-			"num":   "2", "word": "dog12",
-		},
-	}
-
+	outText := "word: foo - num: 123\n" +
+		"word: bar - num: 673\n" +
+		"word: dog12 - num: 2\n"
 	regex := `num:\s(?P<num>\d+),\sword:\s(?P<word>\w+)`
-	dec, enc := NewConnectedPair()
-	atmsr, err := atomiser.NewAtomiser(regex, enc.NewEncoderForKey("regex"))
+
+	// Plumbing
+	rdr, wtr := io.Pipe()
+	inBuf := bytes.NewBufferString(inText)
+	outBuf := new(bytes.Buffer)
+
+	//Producer consumer setup
+	prod := main.InitProducer(wtr)
+	cons := main.InitConsumer(rdr, outBuf)
+
+	atmsr, err := atomiser.NewAtomiser(regex, prod.AtomEnc)
 	HandleErr(t, err)
+
 	wg := sync.WaitGroup{}
 
+	// Server simulation
 	wg.Add(1)
 	go func() {
-		for _, line := range inText {
-			_, err := atmsr.Write([]byte(line))
-			HandleErr(t, err)
-			t.Logf("Encoded line: %v", line)
-		}
+		err := cons.Consume()
+		HandleErr(t, err)
+		rdr.Close()
 		wg.Done()
 	}()
 
-	for _, outVal := range outVals {
-		atom := make(atomiser.AtomData)
-		outKey, err := dec.Pop()
-		HandleErr(t, err)
-		if outKey != "regex" {
-			t.Errorf("Expected key: regex, received key: %v", outKey)
-		}
-		err = dec.Decode(&atom)
-		HandleErr(t, err)
-		if !reflect.DeepEqual(atom, outVal) {
-			t.Errorf("Expected data: %s, received data: %s", outVal, atom)
-		} else {
-			t.Logf("Received value: %s", atom)
-		}
-	}
-	wg.Wait()
-}
+	// Client simulation
+	prod.SetTemplate("word: {{.word}} - num: {{.num}}\n")
+	err = main.Source(inBuf, atmsr)
+	HandleErr(t, err)
+	wtr.Close()
 
-func TestIntSource(t *testing.T) {
-	// TODO
+	wg.Wait()
+
+	// Assert expected output
+	out := outBuf.String()
+	if out != outText {
+		t.Errorf("Unexpected output: %s", out)
+	}
 }
 
 func TestClientServer(t *testing.T) {
-	// TODO
-}
-
-func TestAtomiserClientServer(t *testing.T) {
 	// TODO
 }

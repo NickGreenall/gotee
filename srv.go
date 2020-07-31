@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/NickGreenall/gotee/internal/consumer"
 	"github.com/NickGreenall/gotee/internal/keyEncoding"
 	"golang.org/x/crypto/ssh/terminal"
 	"io"
@@ -17,11 +16,16 @@ func AmForeground() bool {
 	return terminal.IsTerminal(int(fd))
 }
 
-func Sink(conn io.Reader, wg *sync.WaitGroup, out io.Writer) {
+func InitConsumer(conn io.Reader, out io.Writer) *Consumer {
 	dec := json.NewDecoder(conn)
-	cons := new(consumer.Consumer)
+	cons := new(Consumer)
 	cons.Dec = keyEncoding.NewJsonKeyDecoder(dec)
 	cons.Out = out
+	return cons
+}
+
+func Sink(conn io.Reader, wg *sync.WaitGroup, out io.Writer) {
+	cons := InitConsumer(conn, out)
 	err := cons.Consume()
 	if err != io.EOF {
 		log.Printf("Unexpected error: %v", err)

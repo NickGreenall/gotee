@@ -1,4 +1,4 @@
-package consumer
+package main
 
 import (
 	"encoding/json"
@@ -21,7 +21,11 @@ type Consumer struct {
 func (c *Consumer) Consume() error {
 	for {
 		key, err := c.Dec.Pop()
-		if err != nil {
+		switch err {
+		case nil:
+		case io.EOF:
+			return nil
+		default:
 			return err
 		}
 		switch key {
@@ -74,6 +78,9 @@ func (c *Consumer) HandleAtom() error {
 	err := c.Dec.Decode(&atom)
 	if err != nil {
 		return err
+	}
+	if c.enc == nil {
+		return &ConsumerError{"Output encoder not intialised"}
 	}
 	return c.enc.Encode(atom)
 }

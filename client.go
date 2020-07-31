@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"github.com/NickGreenall/gotee/internal/keyEncoding"
-	"github.com/NickGreenall/gotee/internal/producer"
 	"io"
 	"log"
 	"net"
@@ -35,10 +34,10 @@ func InitConn(addr string) (net.Conn, error) {
 	return conn, nil
 }
 
-func InitProducer(out io.Writer) *producer.Producer {
+func InitProducer(out io.Writer) *Producer {
 	enc := json.NewEncoder(out)
 	keyEnc := keyEncoding.NewJsonKeyEncoder(enc)
-	prod := producer.NewProducer(keyEnc)
+	prod := NewProducer(keyEnc)
 
 	return prod
 }

@@ -1,4 +1,4 @@
-package consumer
+package main
 
 type ConsumerError struct {
 	msg string
