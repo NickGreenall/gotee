@@ -12,12 +12,6 @@ import (
 	"time"
 )
 
-type InitError struct{}
-
-func (*InitError) Error() string {
-	return "Did not receive accept byte"
-}
-
 func SockOpen(addr string) bool {
 	_, err := os.Stat(addr)
 	if err != nil {

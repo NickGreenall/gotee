@@ -31,6 +31,7 @@ type Server struct {
 }
 
 func NewServer(network string, address string) (*Server, error) {
+	// TODO setup output multiplexer
 	ln, err := net.Listen(network, address)
 	if err != nil {
 		return nil, err
