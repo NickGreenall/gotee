@@ -22,11 +22,44 @@ func MockConn() io.Reader {
 }
 
 func TestSink(t *testing.T) {
-	conn := bytes.NewBufferString(ClientTestStream)
 	outBuf := new(bytes.Buffer)
-	wg := new(sync.WaitGroup)
-	wg.Add(1)
-	Sink(conn, wg, outBuf)
+
+	srv := new(Server)
+	ln, err := net.Listen("unix", "test.sock")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv.ln = ln
+	srv.wg = new(sync.WaitGroup)
+	srv.wg.Add(1)
+	go func() {
+		conn, err := srv.ln.Accept()
+		if err != nil {
+			t.Error(err)
+		}
+		srv.Sink(conn, outBuf)
+	}()
+
+	conn, err := net.Dial("unix", "test.sock")
+	if err != nil {
+		t.Error(err)
+	}
+	accept := make([]byte, 1)
+	_, err = conn.Read(accept)
+	if err != nil {
+		t.Error(err)
+	}
+	if accept[0] != 100 {
+		t.Errorf("unexpected accept byte: %v", accept)
+	}
+	_, err = conn.Write([]byte(ClientTestStream))
+	if err != nil {
+		t.Error(err)
+	}
+	conn.Close()
+
+	srv.wg.Wait()
+	srv.ln.Close()
 	out := outBuf.String()
 	if out != "{\"A\":\"1\"}\n" {
 		t.Fatalf("Unexpected output: %s", out)
@@ -34,19 +67,25 @@ func TestSink(t *testing.T) {
 }
 
 func TestSniff(t *testing.T) {
-	ln, err := net.Listen("unix", "./test.sock")
-	rdr, wtr := io.Pipe()
+	srv, err := NewServer("unix", "./test.sock")
 	if err != nil {
 		t.Fatal(err)
 	}
+	rdr, wtr := io.Pipe()
 
-	wg := new(sync.WaitGroup)
-
-	go Sniff(ln, wg, wtr)
+	go srv.Sniff(wtr)
 
 	conn, err := net.Dial("unix", "./test.sock")
 	if err != nil {
 		t.Error(err)
+	}
+	accept := make([]byte, 1)
+	_, err = conn.Read(accept)
+	if err != nil {
+		t.Error(err)
+	}
+	if accept[0] != 100 {
+		t.Errorf("Unexpected accept value: %v", accept)
 	}
 
 	_, err = conn.Write([]byte(ClientTestStream))
@@ -69,7 +108,5 @@ func TestSniff(t *testing.T) {
 		t.Error(err)
 	}
 
-	wg.Wait()
-	ln.Close()
-
+	srv.Close()
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/NickGreenall/gotee/internal/atomiser"
 	"github.com/NickGreenall/gotee/internal/keyEncoding"
 	"io"
-	"net"
 	"reflect"
 	"sync"
 	"testing"
@@ -136,11 +135,9 @@ func TestClientServer(t *testing.T) {
 	outBuf := new(bytes.Buffer)
 
 	// Spawn server
-	ln, err := net.Listen("unix", "./test.sock")
+	srv, err := main.NewServer("unix", "./test.sock")
 	HandleErr(t, err)
-
-	wg := new(sync.WaitGroup)
-	go main.Sniff(ln, wg, outBuf)
+	go srv.Sniff(outBuf)
 
 	//Setup client
 	conn, err := main.InitConn("./test.sock")
@@ -156,8 +153,7 @@ func TestClientServer(t *testing.T) {
 	conn.Close()
 
 	// Wait for server to finish cleaning up
-	wg.Wait()
-	ln.Close()
+	srv.Close()
 
 	// Assert expected output
 	out := outBuf.String()

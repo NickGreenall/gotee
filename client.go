@@ -12,6 +12,12 @@ import (
 	"time"
 )
 
+type InitError struct{}
+
+func (*InitError) Error() string {
+	return "Did not receive accept byte"
+}
+
 func SockOpen(addr string) bool {
 	_, err := os.Stat(addr)
 	if err != nil {
@@ -29,6 +35,16 @@ func InitConn(addr string) (net.Conn, error) {
 	conn, err := net.Dial("unix", addr)
 	if err != nil {
 		return nil, err
+	}
+
+	accept := make([]byte, 1)
+	_, err = conn.Read(accept)
+	if err != nil {
+		return nil, err
+	}
+
+	if accept[0] != 100 {
+		return nil, &InitError{}
 	}
 
 	return conn, nil

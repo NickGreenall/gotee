@@ -4,25 +4,21 @@ import (
 	"github.com/NickGreenall/gotee/internal/atomiser"
 	"io"
 	"log"
-	"net"
 	"os"
-	"sync"
 )
 
 func main() {
 	var inStrm io.Reader
 
 	if AmForeground() {
-		ln, err := net.Listen("unix", "./test.sock")
+		srv, err := NewServer("unix", "./test.sock")
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		defer ln.Close()
-		wg := new(sync.WaitGroup)
-		defer wg.Wait()
+		defer srv.Close()
 
-		go Sniff(ln, wg, os.Stdout)
+		go srv.Sniff(os.Stdout)
 
 		inStrm = os.Stdin
 	} else {

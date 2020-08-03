@@ -35,11 +35,18 @@ func TestSockOpen(t *testing.T) {
 }
 
 func TestInitConn(t *testing.T) {
-	ln, err := net.Listen("unix", "./test.sock")
-	if err != nil {
-		t.Fatalf("Unexpected Error: %v", err)
-	}
-	defer ln.Close()
+	go func() {
+		ln, err := net.Listen("unix", "./test.sock")
+		if err != nil {
+			t.Fatalf("Unexpected Error: %v", err)
+		}
+		defer ln.Close()
+		conn, err := ln.Accept()
+		_, err = conn.Write([]byte{100})
+		if err != nil {
+			t.Fatalf("Unexpected Error: %v", err)
+		}
+	}()
 
 	conn, err := InitConn("./test.sock")
 	if err != nil {
