@@ -7,6 +7,7 @@ import (
 	"github.com/NickGreenall/gotee/internal/atomiser"
 	"github.com/NickGreenall/gotee/internal/keyEncoding"
 	"io"
+	"net"
 	"reflect"
 	"sync"
 	"testing"
@@ -121,5 +122,46 @@ func TestNoServer(t *testing.T) {
 }
 
 func TestClientServer(t *testing.T) {
-	// TODO
+	inText := "num: 123, word: foo\n" +
+		"num: 673, word: bar\n" +
+		"num: 2, word: dog12\n"
+
+	outText := "word: foo - num: 123\n" +
+		"word: bar - num: 673\n" +
+		"word: dog12 - num: 2\n"
+	regex := `num:\s(?P<num>\d+),\sword:\s(?P<word>\w+)`
+
+	// Plumbing
+	inBuf := bytes.NewBufferString(inText)
+	outBuf := new(bytes.Buffer)
+
+	// Spawn server
+	ln, err := net.Listen("unix", "./test.sock")
+	HandleErr(t, err)
+
+	wg := new(sync.WaitGroup)
+	go main.Sniff(ln, wg, outBuf)
+
+	//Setup client
+	conn, err := main.InitConn("./test.sock")
+	HandleErr(t, err)
+	prod := main.InitProducer(conn)
+	atmsr, err := atomiser.NewAtomiser(regex, prod.AtomEnc)
+	HandleErr(t, err)
+
+	// Client simulation
+	prod.SetTemplate("word: {{.word}} - num: {{.num}}\n")
+	err = main.Source(inBuf, atmsr)
+	HandleErr(t, err)
+	conn.Close()
+
+	// Wait for server to finish cleaning up
+	wg.Wait()
+	ln.Close()
+
+	// Assert expected output
+	out := outBuf.String()
+	if out != outText {
+		t.Errorf("Unexpected output: %s", out)
+	}
 }
