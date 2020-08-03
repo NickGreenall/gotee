@@ -27,13 +27,14 @@ func InitConsumer(conn io.Reader, out io.Writer) *Consumer {
 func Sink(conn io.Reader, wg *sync.WaitGroup, out io.Writer) {
 	cons := InitConsumer(conn, out)
 	err := cons.Consume()
-	if err != io.EOF {
+	if err != nil {
 		log.Printf("Unexpected error: %v", err)
 	}
 	wg.Done()
 }
 
 func Sniff(ln net.Listener, wg *sync.WaitGroup, out io.Writer) {
+	// TODO Look into setting up cancellation
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -44,6 +45,7 @@ func Sniff(ln net.Listener, wg *sync.WaitGroup, out io.Writer) {
 					return
 				}
 			}
+			// TODO Setup error returning rather than logging.
 			log.Fatalln(err)
 		}
 		wg.Add(1)
