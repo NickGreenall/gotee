@@ -11,40 +11,51 @@ import (
 )
 
 const (
-	DEFAULT_FORMAT = "JSON"
+	DEFAULT_FORMAT = "{{.match}}"
+	DEFAULT_REGEXP = ".*"
 )
 
 var (
-	format = flag.String("f", DEFAULT_FORMAT, "Set output format, can be custom template")
+	format    = flag.String("f", DEFAULT_FORMAT, "Set output format, can be custom template")
+	pattern   = flag.String("r", DEFAULT_REGEXP, "Sets the regexp to parse Stdin and send to print server")
+	runServer = flag.Bool("S", false, "Run server. If not present, will run if foreground process (tail of process group)")
+	trunc     = flag.Bool("t", false, "Truncate rather than tee. Stdin will not be forwarded to output and does not run server if foreground.")
+	bkGnd     = flag.Bool("b", false, "Background mode, don't try to spindup server if not in foreground")
 )
 
 func usage() {
+	// TODO look into finding a package to handle the CLI help message.
 	fmt.Printf("%s:\n", os.Args[0])
 	fmt.Print(
 		"Tees the standard input to a foreground print server.\n" +
 			"\n" +
 			"Usage:\n" +
-			"  gotee [-f string] \"REGEXP\"\n" +
+			"  gotee [-S] [-t] [-b] [-f string] [-r string] [SOCKET]\n" +
 			"\n" +
-			"  REGEXP - Can be any valid GO regexp. Named groups can be accessed in format templates.\n" +
+			"  SOCKET - Socket to send parsed standard input.\n" +
+			"\n" +
+			"  By default a server will be started if the process is in the foreground.\n" +
+			"  If no socked is provided, a socket will be autogenrated based on the process group.\n" +
 			"\n",
 	)
 	flag.PrintDefaults()
 }
 
 func main() {
-	var inStrm io.Reader
+	var inStrm io.Reader = os.Stdin
 
 	// Parse flags and get args
 	flag.Usage = usage
 	flag.Parse()
-	pattern := flag.Arg(0)
+	sock := flag.Arg(0)
 
-	// Setup socket based on process group
-	pgrp := syscall.Getpgrp()
-	sock := fmt.Sprintf("./.%d.gotee.sock", pgrp)
+	if sock == "" {
+		// Setup socket based on process group
+		pgrp := syscall.Getpgrp()
+		sock = fmt.Sprintf("./.%d.gotee.sock", pgrp)
+	}
 
-	if AmForeground() {
+	if *runServer || (!*bkGnd && !*trunc && AmForeground()) {
 		// Spawn server if in foreground
 		srv, err := NewServer("unix", sock)
 		if err != nil {
@@ -53,10 +64,8 @@ func main() {
 		defer srv.Close()
 
 		go srv.Sniff(os.Stdout)
-
-		inStrm = os.Stdin
-	} else {
-		// Otherwise assume connected to pipe and forward on
+	} else if !*trunc {
+		// Otherwise tee
 		inStrm = io.TeeReader(os.Stdin, os.Stdout)
 	}
 
@@ -77,7 +86,7 @@ func main() {
 		prod.SetTemplate(*format + "\n")
 	}
 
-	atmsr, err := atomiser.NewAtomiser(pattern, prod.AtomEnc)
+	atmsr, err := atomiser.NewAtomiser(*pattern, prod.AtomEnc)
 	if err != nil {
 		log.Fatalln(err)
 	}

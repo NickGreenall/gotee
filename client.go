@@ -22,6 +22,7 @@ func SockOpen(addr string) bool {
 
 func InitConn(addr string) (net.Conn, error) {
 
+	// TODO add timeout.
 	for !SockOpen(addr) {
 		time.Sleep(1)
 	}
