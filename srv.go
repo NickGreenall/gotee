@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/NickGreenall/gotee/internal/keyEncoding"
+	"github.com/NickGreenall/gotee/internal/muxWriter"
 	"golang.org/x/crypto/ssh/terminal"
 	"io"
 	"log"
@@ -45,6 +46,7 @@ func NewServer(network string, address string) (*Server, error) {
 }
 
 func (srv *Server) Sniff(out io.Writer) {
+	mux := muxWriter.NewMux(out)
 	for {
 		conn, err := srv.ln.Accept()
 		if err != nil {
@@ -57,7 +59,8 @@ func (srv *Server) Sniff(out io.Writer) {
 			return
 		}
 		srv.wg.Add(1)
-		go srv.Sink(conn, out)
+		sinkWrtr := mux.NewWriter()
+		go srv.Sink(conn, sinkWrtr)
 	}
 }
 
