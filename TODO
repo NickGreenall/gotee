@@ -1,4 +1,3 @@
-- Server side force cancel
 - Client Connection timeout
 - Server timeout
 - Change all unexpected errors to log fatals

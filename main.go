@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/NickGreenall/gotee/internal/atomiser"
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"syscall"
 )
 
@@ -43,11 +45,14 @@ func usage() {
 
 func main() {
 	var inStrm io.Reader = os.Stdin
+	var srv *Server
 
 	// Parse flags and get args
 	flag.Usage = usage
 	flag.Parse()
 	sock := flag.Arg(0)
+
+	appCtx, appCancel := context.WithCancel(context.Background())
 
 	if sock == "" {
 		// Setup socket based on process group
@@ -56,12 +61,12 @@ func main() {
 	}
 
 	if *runServer || (!*bkGnd && !*trunc && AmForeground()) {
+		var err error
 		// Spawn server if in foreground
-		srv, err := NewServer("unix", sock)
+		srv, err = NewServer(appCtx, "unix", sock)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		defer srv.Close()
 
 		go srv.Sniff(os.Stdout)
 	} else if !*trunc {
@@ -105,5 +110,17 @@ func main() {
 	}
 	if err != nil {
 		log.Fatalln(err)
+	}
+
+	if srv != nil {
+		log.Println("Closing server, press <C-c> to force kill")
+		c := make(chan os.Signal)
+		go func() {
+			<-c
+			appCancel()
+		}()
+		signal.Notify(c, os.Interrupt)
+		srv.Close()
+		close(c)
 	}
 }

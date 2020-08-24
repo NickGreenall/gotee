@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"github.com/NickGreenall/gotee"
 	"github.com/NickGreenall/gotee/internal/atomiser"
@@ -135,7 +136,7 @@ func TestClientServer(t *testing.T) {
 	outBuf := new(bytes.Buffer)
 
 	// Spawn server
-	srv, err := main.NewServer("unix", "./test.sock")
+	srv, err := main.NewServer(context.Background(), "unix", "./test.sock")
 	HandleErr(t, err)
 	go srv.Sniff(outBuf)
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/NickGreenall/gotee/internal/keyEncoding"
 	"github.com/NickGreenall/gotee/internal/muxWriter"
@@ -26,18 +27,23 @@ func InitConsumer(conn io.Reader, out io.Writer) *Consumer {
 }
 
 type Server struct {
-	done chan bool
-	ln   net.Listener
-	wg   *sync.WaitGroup
+	serverContext   context.Context
+	listenerContext context.Context
+	cancelListen    context.CancelFunc
+	ln              net.Listener
+	wg              *sync.WaitGroup
 }
 
-func NewServer(network string, address string) (*Server, error) {
+func NewServer(serverContext context.Context, network string, address string) (*Server, error) {
+	listenerContext, cancelListen := context.WithCancel(serverContext)
 	ln, err := net.Listen(network, address)
 	if err != nil {
 		return nil, err
 	}
 	srv := &Server{
-		make(chan bool),
+		serverContext,
+		listenerContext,
+		cancelListen,
 		ln,
 		new(sync.WaitGroup),
 	}
@@ -50,9 +56,8 @@ func (srv *Server) Sniff(out io.Writer) {
 		conn, err := srv.ln.Accept()
 		if err != nil {
 			select {
-			case <-srv.done:
+			case <-srv.listenerContext.Done():
 			default:
-				// TODO Setup error returning rather than logging.
 				log.Fatalln(err)
 			}
 			return
@@ -63,18 +68,24 @@ func (srv *Server) Sniff(out io.Writer) {
 	}
 }
 
-func (srv *Server) Sink(conn io.ReadWriter, out io.Writer) {
+func (srv *Server) Sink(conn io.ReadWriteCloser, out io.Writer) {
+	connContex, connCancel := context.WithCancel(srv.serverContext)
+	go func() {
+		<-connContex.Done()
+		conn.Close()
+	}()
 	conn.Write([]byte{100})
 	cons := InitConsumer(conn, out)
 	err := cons.Consume()
-	if err != nil {
+	if err != nil && connContex.Err() != context.Canceled {
 		log.Printf("Unexpected error: %v", err)
 	}
+	connCancel()
 	srv.wg.Done()
 }
 
 func (srv *Server) Close() {
-	close(srv.done)
+	srv.cancelListen()
 	srv.ln.Close()
 	srv.wg.Wait()
 }

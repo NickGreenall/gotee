@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net"
 	"sync"
@@ -29,6 +30,7 @@ func TestSink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	srv.serverContext = context.Background()
 	srv.ln = ln
 	srv.wg = new(sync.WaitGroup)
 	srv.wg.Add(1)
@@ -67,7 +69,7 @@ func TestSink(t *testing.T) {
 }
 
 func TestSniff(t *testing.T) {
-	srv, err := NewServer("unix", "./test.sock")
+	srv, err := NewServer(context.Background(), "unix", "./test.sock")
 	if err != nil {
 		t.Fatal(err)
 	}
