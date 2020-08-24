@@ -161,3 +161,5 @@ func TestClientServer(t *testing.T) {
 		t.Errorf("Unexpected output: %s", out)
 	}
 }
+
+// TODO add test to check multiple clients
