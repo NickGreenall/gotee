@@ -52,6 +52,10 @@ func NewServer(serverContext context.Context, network string, address string) (*
 
 func (srv *Server) Sniff(out io.Writer) {
 	mux := muxWriter.NewMux(out)
+	go func() {
+		<-srv.serverContext.Done()
+		mux.Close()
+	}()
 	for {
 		conn, err := srv.ln.Accept()
 		if err != nil {

@@ -2,3 +2,6 @@
 - Server timeout
 - Change all unexpected errors to log fatals
 - Handle newlines better
+- Update mux writer to use context
+
+- Add documentation to application and packages

@@ -7,6 +7,7 @@ import (
 	"net"
 	"sync"
 	"testing"
+	"time"
 )
 
 const ClientTestStream string = `{"key":"json"}{"key":"atom", "data": {"A": "1"}}`
@@ -68,15 +69,18 @@ func TestSink(t *testing.T) {
 	}
 }
 
-func TestSniff(t *testing.T) {
-	srv, err := NewServer(context.Background(), "unix", "./test.sock")
+func SpawnSrv(t *testing.T, c context.Context) (*Server, io.ReadCloser) {
+	srv, err := NewServer(c, "unix", "./test.sock")
 	if err != nil {
 		t.Fatal(err)
 	}
 	rdr, wtr := io.Pipe()
 
 	go srv.Sniff(wtr)
+	return srv, rdr
+}
 
+func DialIn(t *testing.T) net.Conn {
 	conn, err := net.Dial("unix", "./test.sock")
 	if err != nil {
 		t.Error(err)
@@ -89,26 +93,94 @@ func TestSniff(t *testing.T) {
 	if accept[0] != 100 {
 		t.Errorf("Unexpected accept value: %v", accept)
 	}
+	return conn
+}
 
-	_, err = conn.Write([]byte(ClientTestStream))
-	if err != nil {
-		t.Error(err)
-	}
-
+func CheckOutput(t *testing.T, rdr io.Reader) {
 	out := make([]byte, 10)
 
-	_, err = rdr.Read(out)
+	_, err := rdr.Read(out)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if string(out) != "{\"A\":\"1\"}\n" {
 		t.Errorf("Unexpected output: %s", out)
 	}
+}
+
+func TestSniff(t *testing.T) {
+	var err error
+	srv, rdr := SpawnSrv(t, context.Background())
+	conn := DialIn(t)
+
+	_, err = conn.Write([]byte(ClientTestStream))
+	if err != nil {
+		t.Error(err)
+	}
+
+	CheckOutput(t, rdr)
 
 	err = conn.Close()
 	if err != nil {
 		t.Error(err)
 	}
 
+	srv.Close()
+}
+
+func TestServerNoConnClose(t *testing.T) {
+	srv, _ := SpawnSrv(t, context.Background())
+
+	srv.Close()
+
+	if SockOpen("./test.sock") {
+		t.Error("Expected socket to have been removed")
+	}
+}
+
+func TestServerConnClose(t *testing.T) {
+	var err error
+	srv, rdr := SpawnSrv(t, context.Background())
+	conn := DialIn(t)
+
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+
+	go func() {
+		srv.Close()
+		wg.Done()
+	}()
+
+	_, err = conn.Write([]byte(ClientTestStream))
+	if err != nil {
+		t.Error(err)
+	}
+
+	CheckOutput(t, rdr)
+
+	err = conn.Close()
+	if err != nil {
+		t.Error(err)
+	}
+
+	wg.Wait()
+}
+
+func TestServerForceClose(t *testing.T) {
+	var err error
+	ctx, cancel := context.WithCancel(context.Background())
+	srv, _ := SpawnSrv(t, ctx)
+	conn := DialIn(t)
+
+	cancel()
+	// Bit shitty, but easiest way to prevent a race cond
+	// for this test
+	time.Sleep(10 * time.Millisecond)
+
+	_, err = conn.Write([]byte(ClientTestStream))
+
+	if err == nil {
+		t.Error("Expected non nil error when trying to write")
+	}
 	srv.Close()
 }
