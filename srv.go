@@ -42,11 +42,11 @@ type Server struct {
 // NewServer creates a new server instance connected over given network
 // and address. The will use the given content to control early cancalation.
 func NewServer(serverContext context.Context, network string, address string) (*Server, error) {
-	listenerContext, cancelListen := context.WithCancel(serverContext)
 	ln, err := net.Listen(network, address)
 	if err != nil {
 		return nil, err
 	}
+	listenerContext, cancelListen := context.WithCancel(serverContext)
 	srv := &Server{
 		serverContext,
 		listenerContext,

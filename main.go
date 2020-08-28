@@ -1,3 +1,4 @@
+// Gotee is an application which can be used to tee content to a server
 package main
 
 import (
