@@ -13,11 +13,14 @@ import (
 	"sync"
 )
 
+// AmForeground returns true if the output is a terminal.
 func AmForeground() bool {
 	fd := os.Stdout.Fd()
 	return terminal.IsTerminal(int(fd))
 }
 
+// InitConsumer sets up a consumer on given connection for
+// given output using JSON decoder.
 func InitConsumer(conn io.Reader, out io.Writer) *Consumer {
 	dec := json.NewDecoder(conn)
 	cons := new(Consumer)
@@ -26,6 +29,8 @@ func InitConsumer(conn io.Reader, out io.Writer) *Consumer {
 	return cons
 }
 
+// Server represents a server instance. Can be used to control and
+// terminate client connections.
 type Server struct {
 	serverContext   context.Context
 	listenerContext context.Context
@@ -34,6 +39,8 @@ type Server struct {
 	wg              *sync.WaitGroup
 }
 
+// NewServer creates a new server instance connected over given network
+// and address. The will use the given content to control early cancalation.
 func NewServer(serverContext context.Context, network string, address string) (*Server, error) {
 	listenerContext, cancelListen := context.WithCancel(serverContext)
 	ln, err := net.Listen(network, address)
@@ -50,6 +57,8 @@ func NewServer(serverContext context.Context, network string, address string) (*
 	return srv, nil
 }
 
+// Sniff waits for a new connection spawning Sink for a new connection.
+// Sink will write received output to out.
 func (srv *Server) Sniff(out io.Writer) {
 	mux := muxWriter.NewMux(out)
 	go func() {
@@ -72,6 +81,8 @@ func (srv *Server) Sniff(out io.Writer) {
 	}
 }
 
+// Sink takes creates a consumer for given connection connected to output.
+// All content on the connection will be consumed by the consumer.
 func (srv *Server) Sink(conn io.ReadWriteCloser, out io.Writer) {
 	connContex, connCancel := context.WithCancel(srv.serverContext)
 	go func() {
@@ -88,6 +99,9 @@ func (srv *Server) Sink(conn io.ReadWriteCloser, out io.Writer) {
 	srv.wg.Done()
 }
 
+// Close will politly close the server. It will stop listening and wait
+// for connections to close client side. The context used during
+// server creation can be used to force close the server.
 func (srv *Server) Close() {
 	srv.cancelListen()
 	srv.ln.Close()

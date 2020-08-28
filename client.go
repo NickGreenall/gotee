@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// SockOpen checks if a socket exists in the filesystem namespace
 func SockOpen(addr string) bool {
 	_, err := os.Stat(addr)
 	if err != nil {
@@ -20,6 +21,10 @@ func SockOpen(addr string) bool {
 	return true
 }
 
+// InitConn opens a connection to the GoTee server on a unix socket
+// given by addr. It will poll till the socket address is available,
+// then waits for an accept byte from the server (this is to ensure
+// connection has been established server side).
 func InitConn(addr string) (net.Conn, error) {
 
 	// TODO add timeout.
@@ -45,6 +50,8 @@ func InitConn(addr string) (net.Conn, error) {
 	return conn, nil
 }
 
+// InitProducer creates a new producer object initialised with a JSON
+// key encoder on out.
 func InitProducer(out io.Writer) *Producer {
 	enc := json.NewEncoder(out)
 	keyEnc := keyEncoding.NewJsonKeyEncoder(enc)
@@ -53,6 +60,7 @@ func InitProducer(out io.Writer) *Producer {
 	return prod
 }
 
+// Source scans lines and writes each line to out.
 func Source(in io.Reader, out io.Writer) error {
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {
@@ -65,6 +73,9 @@ func Source(in io.Reader, out io.Writer) error {
 	return scanner.Err()
 }
 
+// InitReader creates a reader object from in. This will
+// have content copied from in, but will be closed when
+// signals ("sig") are received.
 func InitReader(in io.Reader, sig ...os.Signal) io.ReadCloser {
 	rdr, wtr := io.Pipe()
 	c := make(chan os.Signal, 1)
@@ -73,6 +84,8 @@ func InitReader(in io.Reader, sig ...os.Signal) io.ReadCloser {
 	return rdr
 }
 
+// SpawnCopy copies the content from wtr to in, closing wtr if
+// a signal is received on c.
 func SpawnCopy(wtr *io.PipeWriter, in io.Reader, c chan os.Signal) {
 	go func() {
 		defer close(c)
