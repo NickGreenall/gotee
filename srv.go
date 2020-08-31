@@ -60,7 +60,7 @@ func NewServer(serverContext context.Context, network string, address string) (*
 // Sniff waits for a new connection spawning Sink for a new connection.
 // Sink will write received output to out.
 func (srv *Server) Sniff(out io.Writer) {
-	mux := muxWriter.NewMux(out)
+	mux := muxWriter.NewMux(srv.serverContext, out)
 	go func() {
 		<-srv.serverContext.Done()
 		mux.Close()

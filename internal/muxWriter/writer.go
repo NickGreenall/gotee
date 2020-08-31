@@ -1,6 +1,7 @@
 package muxWriter
 
 import (
+	"context"
 	"io"
 	"sync"
 )
@@ -8,9 +9,9 @@ import (
 //Writer is io.writer which can be used to write to the
 //mux.
 type Writer struct {
-	done chan bool
-	wrt  chan []byte
-	rtn  chan writeRtn
+	ctx context.Context
+	wrt chan []byte
+	rtn chan writeRtn
 }
 
 type writeRtn struct {
@@ -21,11 +22,12 @@ type writeRtn struct {
 //Mux is a multiplexer for a single io.Writer. Child Writers
 //can be creater which can write to the writer concurrently.
 type Mux struct {
-	wrtr io.Writer
-	wg   *sync.WaitGroup
-	done chan bool
-	wrt  chan []byte
-	rtn  chan writeRtn
+	wrtr   io.Writer
+	wg     *sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
+	wrt    chan []byte
+	rtn    chan writeRtn
 }
 
 func (m *Mux) write() {
@@ -35,12 +37,14 @@ func (m *Mux) write() {
 	}
 }
 
-//NewMux returns a Mux object for wrtr.
-func NewMux(wrtr io.Writer) *Mux {
+//NewMux returns a Mux object for given context and wrtr.
+func NewMux(ctx context.Context, wrtr io.Writer) *Mux {
+	muxCtx, muxCancel := context.WithCancel(ctx)
 	m := &Mux{
 		wrtr,
 		new(sync.WaitGroup),
-		make(chan bool),
+		muxCtx,
+		muxCancel,
 		make(chan []byte),
 		make(chan writeRtn),
 	}
@@ -51,7 +55,7 @@ func NewMux(wrtr io.Writer) *Mux {
 //Close closes the mux. This should be called to ensure closure
 //of the mux and underlying channels/gorutines.
 func (m *Mux) Close() {
-	close(m.done)
+	m.cancel()
 	m.wg.Wait()
 	close(m.wrt)
 }
@@ -60,7 +64,7 @@ func (m *Mux) Close() {
 //mux and returns written number of bytes/error.
 func (w *Writer) Write(data []byte) (n int, err error) {
 	select {
-	case <-w.done:
+	case <-w.ctx.Done():
 		return 0, MuxClosed
 	default:
 		w.wrt <- data
@@ -79,7 +83,7 @@ func (w *Writer) forward(m *Mux) {
 }
 
 func (w *Writer) cleanup() {
-	<-w.done
+	<-w.ctx.Done()
 	close(w.wrt)
 }
 
@@ -87,7 +91,7 @@ func (w *Writer) cleanup() {
 //can then be used for concurrent writes.
 func (m *Mux) NewWriter() *Writer {
 	w := &Writer{
-		m.done,
+		m.ctx,
 		make(chan []byte),
 		make(chan writeRtn),
 	}

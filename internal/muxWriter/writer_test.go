@@ -2,6 +2,7 @@ package muxWriter
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"sync"
 	"testing"
@@ -17,7 +18,7 @@ func TestSingleWriter(t *testing.T) {
 	expectedErr := []error{nil, nil, nil}
 
 	outBuf := new(bytes.Buffer)
-	mux := NewMux(outBuf)
+	mux := NewMux(context.Background(), outBuf)
 	defer mux.Close()
 	wrtr := mux.NewWriter()
 
@@ -45,7 +46,7 @@ func TestSingleWriter(t *testing.T) {
 
 func TestWriteAfterClose(t *testing.T) {
 	outBuf := new(bytes.Buffer)
-	mux := NewMux(outBuf)
+	mux := NewMux(context.Background(), outBuf)
 	wrtr := mux.NewWriter()
 	mux.Close()
 	n, err := wrtr.Write([]byte("TEST"))
@@ -59,7 +60,7 @@ func TestWriteAfterClose(t *testing.T) {
 
 func TestErrorPropagation(t *testing.T) {
 	outRdr, outWrtr := io.Pipe()
-	mux := NewMux(outWrtr)
+	mux := NewMux(context.Background(), outWrtr)
 	wrtr := mux.NewWriter()
 	defer mux.Close()
 	outRdr.Close()
@@ -89,7 +90,7 @@ func TestMultipleConcurrentWriters(t *testing.T) {
 	expectedErrB := []error{nil, nil, nil}
 
 	outBuf := new(bytes.Buffer)
-	mux := NewMux(outBuf)
+	mux := NewMux(context.Background(), outBuf)
 	defer mux.Close()
 	wrtr := mux.NewWriter()
 
