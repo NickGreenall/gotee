@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 )
 
 func NewConnectedPair() (*keyEncoding.KeyDecoder, *keyEncoding.KeyEncoder) {
@@ -141,7 +142,8 @@ func TestClientServer(t *testing.T) {
 	go srv.Sniff(outBuf)
 
 	//Setup client
-	conn, err := main.InitConn("./test.sock")
+	clientCtx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+	conn, err := main.InitConn(clientCtx, "./test.sock")
 	HandleErr(t, err)
 	prod := main.InitProducer(conn)
 	atmsr, err := atomiser.NewAtomiser(regex, prod.AtomEnc)

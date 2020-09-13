@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 const (
@@ -76,7 +77,8 @@ func main() {
 	}
 
 	// Connect to the foreground server
-	conn, err := InitConn(sock)
+	clientCtx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+	conn, err := InitConn(clientCtx, sock)
 	if err != nil {
 		log.Fatalln(err)
 	}

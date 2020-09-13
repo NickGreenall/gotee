@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"github.com/NickGreenall/gotee/internal/keyEncoding"
 	"io"
@@ -25,14 +26,19 @@ func SockOpen(addr string) bool {
 // given by addr. It will poll till the socket address is available,
 // then waits for an accept byte from the server (this is to ensure
 // connection has been established server side).
-func InitConn(addr string) (net.Conn, error) {
+func InitConn(ctx context.Context, addr string) (net.Conn, error) {
 
-	// TODO add timeout.
 	for !SockOpen(addr) {
-		time.Sleep(1)
+		select {
+		case <-ctx.Done():
+			return nil, &TimeoutError{}
+		default:
+			time.Sleep(1)
+		}
 	}
 
-	conn, err := net.Dial("unix", addr)
+	var dialer net.Dialer
+	conn, err := dialer.DialContext(ctx, "unix", addr)
 	if err != nil {
 		return nil, err
 	}

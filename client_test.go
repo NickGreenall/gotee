@@ -2,12 +2,14 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"github.com/NickGreenall/gotee/internal/atomiser"
 	"io"
 	"io/ioutil"
 	"net"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestSockNotOpen(t *testing.T) {
@@ -48,7 +50,9 @@ func TestInitConn(t *testing.T) {
 		}
 	}()
 
-	conn, err := InitConn("./test.sock")
+	dialCtx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+
+	conn, err := InitConn(dialCtx, "./test.sock")
 	if err != nil {
 		t.Errorf("Unexpected Error: %v", err)
 	}
