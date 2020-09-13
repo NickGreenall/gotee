@@ -91,8 +91,7 @@ func SpawnCopy(wtr *io.PipeWriter, in io.Reader, c chan os.Signal) {
 		defer close(c)
 		_, err := io.Copy(wtr, in)
 		if err != io.ErrClosedPipe && err != nil {
-			// TODO better solution
-			log.Print(err)
+			log.Fatalln(err)
 		}
 	}()
 
