@@ -25,6 +25,7 @@ var (
 	runServer = flag.Bool("S", false, "Run server. If not present, will run if foreground process (tail of process group)")
 	trunc     = flag.Bool("t", false, "Truncate rather than tee. Stdin will not be forwarded to output and does not run server if foreground.")
 	bkGnd     = flag.Bool("b", false, "Background mode, don't try to spindup server if not in foreground")
+	timeout   = flag.Int("T", 60, "Timeout for connection in seconds")
 )
 
 func usage() {
@@ -34,7 +35,7 @@ func usage() {
 		"Tees the standard input to a foreground print server.\n" +
 			"\n" +
 			"Usage:\n" +
-			"  gotee [-S] [-t] [-b] [-f string] [-r string] [SOCKET]\n" +
+			"  gotee [-S] [-t] [-b] [-f string] [-r string] [-T int] [SOCKET]\n" +
 			"\n" +
 			"  SOCKET - Socket to send parsed standard input.\n" +
 			"\n" +
@@ -77,7 +78,7 @@ func main() {
 	}
 
 	// Connect to the foreground server
-	clientCtx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+	clientCtx, _ := context.WithTimeout(context.Background(), time.Duration(*timeout)*time.Second)
 	conn, err := InitConn(clientCtx, sock)
 	if err != nil {
 		log.Fatalln(err)

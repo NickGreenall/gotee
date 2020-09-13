@@ -2,4 +2,3 @@
 - Handle newlines better
 - Bug: running with single instance in both client and server causes panic -> server doesn't close cleanly
 	- Potential solution, move entire application over to using contexts (and close context on intterupt)
-- Add option for client timeout
