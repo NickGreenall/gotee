@@ -83,7 +83,6 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer conn.Close()
 
 	// Setup the producer side
 	prod := InitProducer(conn)
@@ -102,7 +101,6 @@ func main() {
 
 	// Used to close the connection on interrupt
 	srcRdr := InitReader(inStrm, os.Interrupt)
-	defer srcRdr.Close()
 
 	for {
 		// Source parses line by line and forwards
@@ -115,6 +113,9 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	srcRdr.Close()
+	conn.Close()
+	signal.Reset(os.Interrupt)
 
 	if srv != nil {
 		log.Println("Closing server, press <C-c> to force kill")
